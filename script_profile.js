@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayName = document.getElementById('display-name');
     const messageDiv = document.getElementById('message');
 
-    // Simulação de carregamento de dados do perfil
     function loadProfileData() {
         const storedName = localStorage.getItem('userName') || 'Nome do Usuário';
         const storedEmail = localStorage.getItem('userEmail') || 'usuario@example.com';
@@ -33,18 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const newPassword = passwordInput.value;
         const confirmPassword = confirmPasswordInput.value;
 
-        // Validação de senhas
         if (newPassword && newPassword !== confirmPassword) {
             showMessage('As senhas não coincidem!', 'error');
             return;
         }
 
-        // Simulação de salvamento de dados
         localStorage.setItem('userName', newName);
         displayName.textContent = newName;
 
-        // Em um backend real, aqui você enviaria os dados atualizados
-        // (incluindo a nova senha criptografada, se fornecida) para o servidor.
         showMessage('Perfil atualizado com sucesso!', 'success');
         passwordInput.value = '';
         confirmPasswordInput.value = '';
@@ -56,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 profilePicLarge.style.backgroundImage = `url('${e.target.result}')`;
-                localStorage.setItem('userProfilePic', e.target.result); // Salva a imagem como base64
+                localStorage.setItem('userProfilePic', e.target.result);
                 showMessage('Imagem de perfil atualizada!', 'success');
             };
             reader.readAsDataURL(file);
@@ -65,10 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showMessage(msg, type) {
         messageDiv.textContent = msg;
-        messageDiv.className = `message ${type}`; // Remove hidden e adiciona tipo
+        messageDiv.className = `message ${type}`;
         messageDiv.style.display = 'block';
         setTimeout(() => {
             messageDiv.style.display = 'none';
-        }, 3000); // Esconde a mensagem após 3 segundos
+        }, 3000);
     }
 });
