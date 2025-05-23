@@ -10,41 +10,42 @@
 <body>
     <div class="auth-container">
         <h2>Registro</h2>
-        <div id="g_id_onload"
-             data-client_id="SEU_CLIENT_ID_DO_GOOGLE"
-             data-context="signup"
-             data-ux_mode="popup"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin"
-             data-type="standard"
-             data-shape="rectangular"
-             data-theme="outline"
-             data-text="signup_with"
-             data-size="large"
-             data-logo_alignment="left">
-        </div>
+        <form id="register-form">
+            <div class="input-group">
+                <label for="name">Nome de Usuário</label>
+                <input type="text" id="name" name="name" autocomplete="name" required>
+            </div>
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" autocomplete="new-password" required>
+            </div>
+            <button type="submit">Registrar</button>
+        </form>
         <p class="separator">ou</p>
-        <div class="disabled-form">
-            <p>Em Breve</p>
-            <form>
-                <div class="input-group">
-                    <label for="username">Nome de Usuário</label>
-                    <input type="text" id="username" name="username" disabled>
-                </div>
-                <div class="input-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" disabled>
-                </div>
-                <div class="input-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" name="password" disabled>
-                </div>
-                <button type="submit" disabled>Registrar</button>
-            </form>
+        <div class="social-login">
+            <div id="g_id_onload"
+                 data-client_id="__GOOGLE_CLIENT_ID__"
+                 data-context="signup"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signup_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
         </div>
+        <p class="message" id="auth-message"></p>
     </div>
+    <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
     <script src="script_auth.js"></script>
 </body>
 </html>
