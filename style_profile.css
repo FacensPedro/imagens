@@ -162,5 +162,66 @@ form button:hover {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
+}
+
+/* Estilos para o aviso de alterações não salvas (centralizado na página) */
+.alert-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1a1a1a;
+    color: white;
+    padding: 25px 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 90%;
+    text-align: center;
+    border: 1px solid #9370db;
+}
+
+.alert-buttons-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.alert-message .alert-btn {
+    width: 100px;
+    height: 40px;
+    line-height: 20px;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #9370db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 1em;
+    text-align: center;
+}
+
+.alert-message .alert-btn:hover {
+    background-color: #6a0dad;
+    transform: translateY(-2px);
+}
+
+.alert-message .alert-btn.discard {
+    background-color: #dc3545;
+}
+
+.alert-message .alert-btn.discard:hover {
+    background-color: #c82333;
 }
