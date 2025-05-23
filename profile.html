@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil</title>
+    <link rel="stylesheet" href="style_profile.css">
+</head>
+<body>
+    <header>
+        <div class="header-buttons">
+            <a href="image_generator.html" class="button">Voltar ao Gerador</a>
+        </div>
+    </header>
+    <main>
+        <div class="profile-container">
+            <h2>Meu Perfil</h2>
+            <div class="profile-header">
+                <div class="profile-pic-large" style="background-image: url('default_profile.png');">
+                    <label for="profile-image-upload" class="upload-icon">&#9998;</label>
+                    <input type="file" id="profile-image-upload" accept="image/*" style="display: none;">
+                </div>
+                <h3 id="display-name">Nome do Usuário</h3>
+            </div>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label for="name">Nome:</label>
+                    <input type="text" id="name" name="name" value="Nome do Usuário">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" value="usuario@example.com" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="password">Nova Senha:</label>
+                    <input type="password" id="password" name="password" placeholder="Deixe em branco para não alterar">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirmar Senha:</label>
+                    <input type="password" id="confirm-password" name="confirm-password">
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+            <p id="message" class="hidden"></p>
+        </div>
+    </main>
+    <script src="script_profile.js"></script>
+</body>
+</html>
