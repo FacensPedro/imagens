@@ -1,5 +1,4 @@
-// Este script lida com a interface do usuário do perfil.
-// A funcionalidade de salvar dados do perfil (nome, senha, imagem) exigiria um backend real.
+// Este script lida com a interface do usuário do perfil e o aviso de alterações não salvas.
 
 document.addEventListener('DOMContentLoaded', () => {
     const profileForm = document.getElementById('profile-form');
@@ -11,21 +10,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const profilePicLarge = document.querySelector('.profile-pic-large');
     const displayName = document.getElementById('display-name');
     const messageDiv = document.getElementById('message');
+    const unsavedChangesAlert = document.getElementById('unsaved-changes-alert');
+    const saveAndProceedBtn = document.getElementById('save-and-proceed-btn');
+    const discardAndProceedBtn = document.getElementById('discard-and-proceed-btn');
+    const backToGeneratorBtn = document.getElementById('back-to-generator');
 
-    function loadProfileData() {
-        const storedName = localStorage.getItem('userName') || 'Nome do Usuário';
-        const storedEmail = localStorage.getItem('userEmail') || 'usuario@example.com';
-        const storedProfilePic = localStorage.getItem('userProfilePic') || 'default_profile.png';
+    let hasUnsavedChanges = false;
+    let originalProfileData = {};
+    let targetPage = '';
+    let initialLoadComplete = false;
 
-        nameInput.value = storedName;
-        emailInput.value = storedEmail;
-        displayName.textContent = storedName;
-        profilePicLarge.style.backgroundImage = `url('${storedProfilePic}')`;
+    // Função para mostrar mensagens de status
+    function showMessage(msg, type) {
+        messageDiv.textContent = msg;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
     }
 
+    // Carregar dados do perfil do backend
+    async function loadProfileData() {
+        try {
+            const response = await fetch('/api/profile');
+            if (response.ok) {
+                const userData = await response.json();
+                nameInput.value = userData.name;
+                emailInput.value = userData.email;
+                displayName.textContent = userData.name;
+
+                if (userData.profile_pic_path) {
+                    const imageUrl = userData.profile_pic_path.startsWith('http') ?
+                                     userData.profile_pic_path :
+                                     `/profile_pics/${userData.profile_pic_path}`;
+                    profilePicLarge.style.backgroundImage = `url('${imageUrl}?t=${new Date().getTime()}')`;
+                } else {
+                    profilePicLarge.style.backgroundImage = `url('default_profile.png')`;
+                }
+                originalProfileData = {
+                    name: userData.name,
+                    profile_pic_path: userData.profile_pic_path || 'default_profile.png'
+                };
+                hasUnsavedChanges = false;
+                initialLoadComplete = true;
+            } else {
+                const errorData = await response.json();
+                showMessage(errorData.error || 'Erro ao carregar dados do perfil.', 'error');
+                if (response.status === 401) {
+                    setTimeout(() => window.location.href = 'login.html', 1500);
+                }
+            }
+        } catch (error) {
+            console.error('Erro na requisição de perfil:', error);
+            showMessage('Erro de comunicação com o servidor ao carregar perfil.', 'error');
+        }
+    }
     loadProfileData();
 
-    profileForm.addEventListener('submit', function(e) {
+    // Função para verificar se há alterações nos campos relevantes
+    function checkForChanges() {
+        if (!initialLoadComplete) return false;
+
+        const currentName = nameInput.value.trim();
+        const newPasswordEntered = passwordInput.value !== '';
+        const newConfirmPasswordEntered = confirmPasswordInput.value !== '';
+        const newProfilePicSelected = profileImageUpload.files.length > 0;
+
+        const nameChanged = currentName !== originalProfileData.name;
+        const passwordChanged = newPasswordEntered || newConfirmPasswordEntered;
+        
+        return nameChanged || passwordChanged || newProfilePicSelected;
+    }
+
+    // Monitorar alterações nos campos do formulário para setar hasUnsavedChanges
+    profileForm.addEventListener('input', () => {
+        hasUnsavedChanges = checkForChanges();
+    });
+    profileImageUpload.addEventListener('change', () => {
+        hasUnsavedChanges = checkForChanges();
+    });
+
+    // Submissão do formulário de perfil
+    profileForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const newName = nameInput.value.trim();
@@ -37,33 +104,106 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        localStorage.setItem('userName', newName);
-        displayName.textContent = newName;
+        const formData = new FormData();
+        if (newName !== originalProfileData.name) {
+            formData.append('name', newName);
+        }
+        if (newPassword) {
+            formData.append('password', newPassword);
+        }
+        if (profileImageUpload.files.length > 0) {
+            formData.append('profile_pic', profileImageUpload.files[0]);
+        }
+        
+        if (formData.entries().next().done && !profileImageUpload.files.length) {
+             showMessage('Nenhuma alteração a ser salva.', 'success');
+             hasUnsavedChanges = false;
+             if (targetPage) {
+                 window.location.href = targetPage;
+                 targetPage = '';
+             }
+             return;
+        }
 
-        showMessage('Perfil atualizado com sucesso!', 'success');
-        passwordInput.value = '';
-        confirmPasswordInput.value = '';
-    });
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'POST',
+                body: formData
+            });
 
-    profileImageUpload.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                profilePicLarge.style.backgroundImage = `url('${e.target.result}')`;
-                localStorage.setItem('userProfilePic', e.target.result);
-                showMessage('Imagem de perfil atualizada!', 'success');
-            };
-            reader.readAsDataURL(file);
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(data.message, 'success');
+                localStorage.setItem('userName', data.user.name);
+                localStorage.setItem('userEmail', data.user.email);
+                localStorage.setItem('userProfilePic', data.user.profile_pic_path || 'default_profile.png');
+                displayName.textContent = data.user.name;
+                
+                if (data.user.profile_pic_path) {
+                    const imageUrl = data.user.profile_pic_path.startsWith('http') ?
+                                     data.user.profile_pic_path :
+                                     `/profile_pics/${data.user.profile_pic_path}`;
+                    profilePicLarge.style.backgroundImage = `url('${imageUrl}?t=${new Date().getTime()}')`;
+                }
+                passwordInput.value = '';
+                confirmPasswordInput.value = '';
+                hasUnsavedChanges = false;
+                originalProfileData = {
+                    name: data.user.name,
+                    profile_pic_path: data.user.profile_pic_path || 'default_profile.png'
+                };
+
+                if (targetPage) {
+                    window.location.href = targetPage;
+                    targetPage = '';
+                }
+
+            } else {
+                showMessage(data.error || 'Erro ao atualizar perfil.', 'error');
+            }
+        } catch (error) {
+            console.error('Erro na requisição de atualização de perfil:', error);
+            showMessage('Erro de comunicação com o servidor ao atualizar perfil.', 'error');
         }
     });
 
-    function showMessage(msg, type) {
-        messageDiv.textContent = msg;
-        messageDiv.className = `message ${type}`;
-        messageDiv.style.display = 'block';
-        setTimeout(() => {
-            messageDiv.style.display = 'none';
-        }, 3000);
+    // Lógica para aviso de alterações não salvas ao tentar navegar
+    document.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (this.href.startsWith(window.location.origin) && !this.href.includes('#')) {
+                handleNavigation(e, this.href);
+            }
+        });
+    });
+
+    function handleNavigation(event, targetUrl) {
+        if (checkForChanges()) {
+            event.preventDefault();
+            targetPage = targetUrl;
+            unsavedChangesAlert.classList.remove('hidden');
+            return false;
+        }
+        return true;
     }
+
+    window.addEventListener('beforeunload', (e) => {
+        if (checkForChanges()) {
+            e.returnValue = 'Você tem alterações não salvas. Deseja sair sem salvar?';
+        }
+    });
+
+    saveAndProceedBtn.addEventListener('click', () => {
+        unsavedChangesAlert.classList.add('hidden');
+        profileForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    });
+
+    discardAndProceedBtn.addEventListener('click', () => {
+        unsavedChangesAlert.classList.add('hidden');
+        hasUnsavedChanges = false;
+        if (targetPage) {
+            window.location.href = targetPage;
+            targetPage = '';
+        }
+    });
 });
