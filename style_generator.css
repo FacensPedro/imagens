@@ -24,8 +24,7 @@ header {
     display: inline-block;
 }
 
-.dropdown-toggle,
-.profile-toggle {
+.dropdown-toggle { /* Apenas para o dropdown de modelo */
     background-color: #6a0dad;
     color: white;
     padding: 10px 20px;
@@ -36,14 +35,13 @@ header {
     transition: background-color 0.3s ease;
 }
 
-.dropdown-toggle:hover,
-.profile-toggle:hover {
+.dropdown-toggle:hover {
     background-color: #8b00a3;
 }
 
 .dropdown-menu,
 .profile-menu {
-    display: none;
+    display: none; /* Oculto por padrão, só aparece com JS */
     position: absolute;
     background-color: #2a2a2a;
     min-width: 180px;
@@ -82,10 +80,16 @@ header {
     background-color: #444;
 }
 
-.model-dropdown:hover .dropdown-menu,
-.profile-area:hover .profile-menu {
+/* Remover a regra de hover para o menu do perfil */
+/* .profile-area:hover .profile-menu {
+    display: block;
+} */
+
+/* O menu do perfil agora só aparece quando a classe 'active' é adicionada */
+.profile-area.active .profile-menu {
     display: block;
 }
+
 
 .profile-area {
     display: flex;
@@ -101,31 +105,7 @@ header {
     background-size: cover;
     background-position: center;
     border: 2px solid #9370db;
-    cursor: pointer;
-}
-
-.profile-toggle {
-    background: none;
-    color: #fff;
-    padding: 0;
-    font-size: 1.1em;
-    cursor: pointer;
-    border-radius: 0;
-}
-
-.profile-toggle:hover {
-    text-decoration: underline;
-    background-color: transparent;
-}
-
-.logout-button {
-    background-color: #dc3545 !important;
-    color: white !important;
-    border-radius: 0 0 5px 5px;
-}
-
-.logout-button:hover {
-    background-color: #c82333 !important;
+    cursor: pointer; /* Torna a imagem clicável */
 }
 
 main {
