@@ -1,6 +1,5 @@
-// Este script demonstra a funcionalidade da UI e simula a chamada à API.
-// A integração real com a API do Google Studio (Generative AI API) exigiria um backend Python
-// para lidar com a chave da API com segurança.
+// Este script lida com a funcionalidade da UI, faz chamadas para o backend Flask
+// e lida com o estado da sessão do usuário.
 
 document.addEventListener('DOMContentLoaded', () => {
     const promptInput = document.getElementById('prompt-input');
@@ -10,14 +9,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropdownToggle = document.querySelector('.dropdown-toggle');
     const dropdownMenu = document.querySelector('.dropdown-menu');
     const modelLinks = document.querySelectorAll('.dropdown-menu a');
-    const profileToggle = document.querySelector('.profile-toggle');
+    const profileArea = document.querySelector('.profile-area');
     const profileMenu = document.querySelector('.profile-menu');
     const profilePic = document.querySelector('.profile-pic');
-    const logoutButton = document.querySelector('.logout-button');
+    const logoutButton = document.getElementById('logout-button');
+    const initialMessageElement = document.getElementById('initial-message');
+    const errorMessageElement = document.getElementById('error-message');
 
-    let currentModel = 'google-studio'; // Modelo padrão
+    let currentModel = 'imagen-3.0-generate-002'; // Modelo padrão para geração de imagem
 
-    // Funcionalidade do campo de digitação
+    // Função para verificar o status do usuário e atualizar a UI
+    async function checkUserStatus() {
+        try {
+            const response = await fetch('/api/user_status');
+            const data = await response.json();
+            if (data.logged_in) {
+                const userProfilePicPath = data.user.profile_pic_path;
+                if (userProfilePicPath && userProfilePicPath.startsWith('http')) {
+                    profilePic.style.backgroundImage = `url('${userProfilePicPath}')`;
+                } else if (userProfilePicPath) {
+                    profilePic.style.backgroundImage = `url('/profile_pics/${userProfilePicPath}?t=${new Date().getTime()}')`;
+                } else {
+                    profilePic.style.backgroundImage = `url('default_profile.png')`;
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        } catch (error) {
+            console.error('Erro ao verificar status do usuário:', error);
+            window.location.href = 'login.html';
+        }
+    }
+    checkUserStatus();
+
     promptInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.ctrlKey) {
             e.preventDefault();
@@ -29,31 +53,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     generateButton.addEventListener('click', generateImage);
 
-    function generateImage() {
-        const prompt = promptInput.value.trim();
-        if (!prompt) {
-            alert('Por favor, digite um prompt para gerar a imagem.');
+    async function generateImage() {
+        const userPrompt = promptInput.value.trim(); // Renomeado para userPrompt
+        if (!userPrompt) {
+            errorMessageElement.textContent = 'Por favor, digite um prompt para gerar a imagem.';
+            errorMessageElement.style.display = 'block';
             return;
         }
 
+        // Logs para depuração no frontend
+        console.log("Prompt do usuário digitado (userPrompt):", userPrompt);
+        console.log("Modelo selecionado (currentModel):", currentModel);
+        // O detailedPrompt será construído no backend (ou não, dependendo da sua escolha lá)
+        console.log("Corpo da requisição JSON a ser enviado:", JSON.stringify({ userPrompt: userPrompt, model: currentModel }));
+
+
+        if (initialMessageElement) {
+            initialMessageElement.style.display = 'none';
+        }
         imageDisplay.innerHTML = '';
+        errorMessageElement.style.display = 'none';
         loadingMessage.style.display = 'block';
 
-        console.log(`Gerando imagem com o modelo: ${currentModel} para o prompt: "${prompt}"`);
+        try {
+            const response = await fetch('/generate_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // MUDANÇA: Enviar 'userPrompt' para o backend
+                body: JSON.stringify({ userPrompt: userPrompt, model: currentModel })
+            });
 
-        setTimeout(() => {
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao gerar imagem no servidor.');
+            }
+
+            const data = await response.json();
+            const imageUrl = data.image_url;
+
+            if (imageUrl) {
+                const imgElement = document.createElement('img');
+                imgElement.src = imageUrl;
+                imgElement.alt = `Imagem gerada para "${userPrompt.replace(/"/g, '&quot;')}"`;
+
+                imgElement.onerror = () => {
+                    console.error('Falha ao carregar a imagem gerada. URL:', imageUrl);
+                    errorMessageElement.textContent = 'A imagem gerada não pôde ser carregada. Tente novamente ou use outro prompt.';
+                    errorMessageElement.style.display = 'block';
+                    imgElement.remove();
+                };
+
+                imgElement.onload = () => {
+                    console.log('Imagem carregada com sucesso:', imageUrl);
+                    imageDisplay.style.justifyContent = 'center';
+                    imageDisplay.style.alignItems = 'center';
+                };
+
+                imageDisplay.appendChild(imgElement);
+
+            } else {
+                errorMessageElement.textContent = 'Nenhuma imagem retornada ou URL inválida pela API.';
+                errorMessageElement.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error('Erro na geração de imagem:', error);
+            errorMessageElement.textContent = `Erro: ${error.message || 'Falha na geração de imagem.'}`;
+            errorMessageElement.style.display = 'block';
+        } finally {
             loadingMessage.style.display = 'none';
-            const imageUrl = `https://via.placeholder.com/400x300?text=Imagem+Gerada+por+${currentModel.replace('-', '+')}`;
-            const imgElement = document.createElement('img');
-            imgElement.src = imageUrl;
-            imgElement.alt = `Imagem gerada para "${prompt}"`;
-            imageDisplay.appendChild(imgElement);
-            imageDisplay.style.justifyContent = 'flex-start';
-            imageDisplay.style.alignItems = 'flex-start';
-        }, 2000);
+        }
     }
 
-    // Funcionalidade do dropdown de modelos
     dropdownToggle.addEventListener('click', function() {
         dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
     });
@@ -61,10 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     modelLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            currentModel = this.dataset.model;
+            if (this.dataset.model === 'google-studio') {
+                currentModel = 'imagen-3.0-generate-002';
+            } else {
+                currentModel = null;
+                alert('Este modelo ainda não está disponível para geração de imagens.');
+            }
             dropdownToggle.textContent = this.textContent;
             dropdownMenu.style.display = 'none';
-            console.log(`Modelo selecionado: ${currentModel}`);
+            console.log(`Modelo selecionado: ${this.textContent} (API Model: ${currentModel || 'N/A'})`);
         });
     });
 
@@ -72,39 +150,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
             dropdownMenu.style.display = 'none';
         }
-    });
-
-    // Funcionalidade do dropdown de perfil
-    profilePic.addEventListener('click', function() {
-        profileMenu.style.display = profileMenu.style.display === 'block' ? 'none' : 'block';
-    });
-
-    profileToggle.addEventListener('click', function() {
-        profileMenu.style.display = profileMenu.style.display === 'block' ? 'none' : 'block';
-    });
-
-    logoutButton.addEventListener('click', () => {
-        // Para logout do Google Identity Services, você chamaria:
-        // google.accounts.id.disableAutoSelect(); // Opcional, para deslogar totalmente do browser
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userProfilePic');
-        alert('Você foi desconectado. Redirecionando para a página inicial.');
-        window.location.href = 'index.html';
-    });
-
-    window.addEventListener('click', function(e) {
-        if (!profileToggle.contains(e.target) && !profileMenu.contains(e.target) && !profilePic.contains(e.target)) {
-            profileMenu.style.display = 'none';
+        if (!profileArea.contains(e.target)) {
+            profileArea.classList.remove('active');
         }
     });
 
-    function loadProfileData() {
-        const userName = localStorage.getItem('userName') || 'Nome do Usuário';
-        const userProfilePic = localStorage.getItem('userProfilePic') || 'default_profile.png';
-        document.querySelector('.profile-toggle').textContent = userName;
-        document.querySelector('.profile-pic').style.backgroundImage = `url('${userProfilePic}')`;
-    }
+    profilePic.addEventListener('click', function(event) {
+        event.stopPropagation();
+        profileArea.classList.toggle('active');
+    });
 
-    loadProfileData();
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                if (response.ok) {
+                    alert('Você foi desconectado. Redirecionando para a página inicial.');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Erro ao fazer logout.');
+                }
+            } catch (error) {
+                console.error('Erro no logout:', error);
+                alert('Erro de comunicação com o servidor durante o logout.');
+            }
+        });
+    } else {
+        console.warn("Botão de logout não encontrado. O listener não foi adicionado.");
+    }
 });
