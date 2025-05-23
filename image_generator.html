@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Imagens IA</title>
+    <link rel="stylesheet" href="style_generator.css">
+</head>
+<body>
+    <header>
+        <div class="model-dropdown">
+            <button class="dropdown-toggle">Google Studio</button>
+            <div class="dropdown-menu">
+                <a href="#" data-model="google-studio">Google Studio</a>
+                <a href="#" data-model="another-model">Outro Modelo (Em Breve)</a>
+            </div>
+        </div>
+        <div class="profile-area">
+            <div class="profile-pic" style="background-image: url('default_profile.png');"></div>
+            <div class="profile-dropdown">
+                <button class="profile-toggle">Nome do Usuário</button>
+                <div class="profile-menu">
+                    <a href="profile.html">Perfil</a>
+                    <a href="settings.html">Configurações</a>
+                    <button class="logout-button">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="generator-container">
+            <div class="input-section">
+                <textarea id="prompt-input" placeholder="Digite seu prompt aqui para gerar imagens..."></textarea>
+                <button id="generate-button">Gerar Imagem</button>
+            </div>
+            <div class="image-results">
+                <p>Suas imagens geradas aparecerão aqui.</p>
+                <div id="image-display">
+                    </div>
+                <p class="loading-message" style="display: none;">Gerando imagem...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="script_generator.js"></script>
+</body>
+</html>
