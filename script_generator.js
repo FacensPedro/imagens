@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             generateImage();
         } else if (e.key === 'Enter' && e.ctrlKey) {
-            // Pular linha
             this.value += '\n';
         }
     });
@@ -37,17 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        imageDisplay.innerHTML = ''; // Limpa resultados anteriores
-        loadingMessage.style.display = 'block'; // Mostra mensagem de carregamento
+        imageDisplay.innerHTML = '';
+        loadingMessage.style.display = 'block';
 
-        // Simula a chamada à API do Google Studio
-        // Em um cenário real, você faria uma requisição para o seu backend Python aqui.
-        // O backend então chamaria a API do Google Generative AI.
         console.log(`Gerando imagem com o modelo: ${currentModel} para o prompt: "${prompt}"`);
 
         setTimeout(() => {
-            loadingMessage.style.display = 'none'; // Esconde mensagem de carregamento
-            // Simula a URL de uma imagem gerada
+            loadingMessage.style.display = 'none';
             const imageUrl = `https://via.placeholder.com/400x300?text=Imagem+Gerada+por+${currentModel.replace('-', '+')}`;
             const imgElement = document.createElement('img');
             imgElement.src = imageUrl;
@@ -55,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imageDisplay.appendChild(imgElement);
             imageDisplay.style.justifyContent = 'flex-start';
             imageDisplay.style.alignItems = 'flex-start';
-        }, 2000); // Simula um atraso de 2 segundos para a geração
+        }, 2000);
     }
 
     // Funcionalidade do dropdown de modelos
@@ -70,12 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dropdownToggle.textContent = this.textContent;
             dropdownMenu.style.display = 'none';
             console.log(`Modelo selecionado: ${currentModel}`);
-            // Aqui você pode adicionar lógica para configurar o modelo da API
-            // se houver diferentes endpoints ou configurações para cada modelo.
         });
     });
 
-    // Fechar dropdown de modelos se clicar fora
     window.addEventListener('click', function(e) {
         if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
             dropdownMenu.style.display = 'none';
@@ -92,18 +84,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     logoutButton.addEventListener('click', () => {
-        alert('Simulando logout. Redirecionando para a página inicial.');
+        // Para logout do Google Identity Services, você chamaria:
+        // google.accounts.id.disableAutoSelect(); // Opcional, para deslogar totalmente do browser
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userProfilePic');
+        alert('Você foi desconectado. Redirecionando para a página inicial.');
         window.location.href = 'index.html';
     });
 
-    // Fechar dropdown de perfil se clicar fora
     window.addEventListener('click', function(e) {
         if (!profileToggle.contains(e.target) && !profileMenu.contains(e.target) && !profilePic.contains(e.target)) {
             profileMenu.style.display = 'none';
         }
     });
 
-    // Simulação de dados do perfil (em um ambiente real, viria do backend)
     function loadProfileData() {
         const userName = localStorage.getItem('userName') || 'Nome do Usuário';
         const userProfilePic = localStorage.getItem('userProfilePic') || 'default_profile.png';
@@ -111,5 +106,5 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.profile-pic').style.backgroundImage = `url('${userProfilePic}')`;
     }
 
-    loadProfileData(); // Carrega dados do perfil ao iniciar
+    loadProfileData();
 });
