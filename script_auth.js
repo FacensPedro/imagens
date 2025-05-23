@@ -1,37 +1,153 @@
-function handleCredentialResponse(response) {
-    // Decodifica o token de ID JWT (JSON Web Token)
-    const data = jwt_decode(response.credential);
-    
-    // Em um ambiente real, você enviaria este 'response.credential' para o seu backend
-    // para verificação e criação de sessão de usuário segura.
-    console.log("ID: " + data.sub);
-    console.log('Nome Completo: ' + data.name);
-    console.log('Dado de Perfil: ' + data.picture);
-    console.log('Email: ' + data.email);
+// Este script lida com a autenticação de login e registro, incluindo o Google Identity Services.
 
-    // Simulação de armazenamento de dados do perfil para uso no frontend
-    localStorage.setItem('userName', data.name);
-    localStorage.setItem('userEmail', data.email);
-    localStorage.setItem('userProfilePic', data.picture);
-
-    alert('Login/Registro com Google realizado com sucesso! Redirecionando para o gerador de imagens...');
-    window.location.href = 'image_generator.html';
-}
-
-// Incluir a biblioteca jwt-decode para decodificar o token de ID no cliente (apenas para demonstração)
-// Em um ambiente de produção, a decodificação e verificação do token devem ser feitas no backend.
-// Você precisará adicionar <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
-// no seu HTML, ou incluir o conteúdo desta biblioteca no seu script_auth.js se não for usá-la externamente.
-// Para fins de teste no Colab, pode-se incluir uma versão simplificada ou o link externo.
-
-// A linha abaixo é para fins de teste no Colab/desenvolvimento.
-// Para um ambiente de produção, a validação do token deve ser no servidor.
+// Função jwt_decode EMBUTIDA para garantir disponibilidade
 function jwt_decode(token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
-
     return JSON.parse(jsonPayload);
 };
+
+function showAuthMessage(message, type) {
+    const authMessageDiv = document.getElementById('auth-message');
+    if (authMessageDiv) {
+        authMessageDiv.textContent = message;
+        authMessageDiv.className = `message ${type}`;
+        authMessageDiv.style.display = 'block';
+        setTimeout(() => {
+            authMessageDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Handler para resposta do Google Identity Services (chamado automaticamente pelo SDK)
+async function handleCredentialResponse(response) {
+    const id_token = response.credential;
+    const authMessageDiv = document.getElementById('auth-message');
+    if (authMessageDiv) authMessageDiv.style.display = 'block';
+    if (authMessageDiv) authMessageDiv.textContent = 'Processando login com Google...';
+    if (authMessageDiv) authMessageDiv.className = 'message';
+
+
+    try {
+        const decoded_data = jwt_decode(id_token);
+        console.log('Dados do Google decodificados:', decoded_data);
+
+        const apiEndpoint = window.location.pathname.includes('register.html') ? '/api/register' : '/api/login';
+
+        const backendResponse = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: decoded_data.name,
+                email: decoded_data.email,
+                google_id: decoded_data.sub,
+                picture_url: decoded_data.picture, // ENVIANDO A URL DA FOTO DO GOOGLE PARA O BACKEND
+                id_token: id_token
+            })
+        });
+
+        const data = await backendResponse.json();
+
+        if (backendResponse.ok) {
+            showAuthMessage(data.message, 'success');
+            localStorage.setItem('userName', data.user.name || decoded_data.name);
+            localStorage.setItem('userEmail', data.user.email || decoded_data.email);
+            localStorage.setItem('userProfilePic', data.user.profile_pic_path || decoded_data.picture || 'default_profile.png');
+            setTimeout(() => {
+                window.location.href = 'image_generator.html';
+            }, 1000);
+        } else {
+            showAuthMessage(data.error || 'Erro no login com Google.', 'error');
+        }
+
+    } catch (error) {
+        console.error('Erro ao processar login com Google:', error);
+        showAuthMessage('Erro inesperado ao processar login com Google.', 'error');
+    }
+}
+
+// Funções para lidar com formulários de login/registro manual
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            showAuthMessage('A fazer login...', '');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAuthMessage(data.message, 'success');
+                    localStorage.setItem('userName', data.user.name);
+                    localStorage.setItem('userEmail', data.user.email);
+                    localStorage.setItem('userProfilePic', data.user.profile_pic_path || 'default_profile.png');
+                    setTimeout(() => {
+                        window.location.href = 'image_generator.html';
+                    }, 1000);
+                } else {
+                    showAuthMessage(data.error || 'Erro no login.', 'error');
+                }
+            } catch (error) {
+                console.error('Erro na requisição de login:', error);
+                showAuthMessage('Erro de comunicação com o servidor.', 'error');
+            }
+        });
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            showAuthMessage('A registar...', '');
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAuthMessage(data.message, 'success');
+                    localStorage.setItem('userName', data.user.name);
+                    localStorage.setItem('userEmail', data.user.email);
+                    localStorage.setItem('userProfilePic', data.user.profile_pic_path || 'default_profile.png');
+                    setTimeout(() => {
+                        window.location.href = 'image_generator.html';
+                    }, 1000);
+                } else {
+                    showAuthMessage(data.error || 'Erro no registro.', 'error');
+                }
+            } catch (error) {
+                console.error('Erro na requisição de registro:', error);
+                showAuthMessage('Erro de comunicação com o servidor.', 'error');
+            }
+        });
+    }
+});
