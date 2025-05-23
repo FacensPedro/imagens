@@ -17,6 +17,9 @@ body {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
     text-align: center;
     width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 h2 {
@@ -25,79 +28,9 @@ h2 {
     font-size: 2em;
 }
 
-.social-login {
-    margin-bottom: 25px;
-}
-
-.google-login-button {
-    background-color: #db4437;
-    color: #fff;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 5px;
-    font-size: 1.1em;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+form {
     width: 100%;
-    transition: background-color 0.3s ease;
-}
-
-.google-login-button:hover {
-    background-color: #c0392b;
-}
-
-.google-login-button img {
-    margin-right: 8px;
-}
-
-.separator {
-    margin: 25px 0;
-    color: #aaa;
-    font-size: 0.9em;
-    position: relative;
-}
-
-.separator::before,
-.separator::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 40%;
-    height: 1px;
-    background-color: #444;
-}
-
-.separator::before {
-    left: 0;
-}
-
-.separator::after {
-    right: 0;
-}
-
-.disabled-form {
-    opacity: 0.5;
-    pointer-events: none;
-    position: relative;
-    padding-top: 20px;
-}
-
-.disabled-form p {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #888;
-    font-size: 1.5em;
-    font-weight: bold;
-    z-index: 10;
-    background-color: #1a1a1a;
-    padding: 10px 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    margin-bottom: 25px;
 }
 
 .input-group {
@@ -134,7 +67,67 @@ form button {
     padding: 12px 25px;
     border-radius: 5px;
     font-size: 1.1em;
-    cursor: not-allowed;
+    cursor: pointer;
     width: 100%;
     transition: background-color 0.3s ease;
+}
+
+form button:hover {
+    background-color: #8b00a3;
+}
+
+.separator {
+    margin: 25px 0;
+    color: #aaa;
+    font-size: 0.9em;
+    position: relative;
+    width: 100%;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: #444;
+}
+
+.separator::before {
+    left: 0;
+}
+
+.separator::after {
+    right: 0;
+}
+
+.social-login {
+    margin-top: 0;
+    width: 100%;
+}
+
+.g_id_signin {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.message {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    text-align: center;
+    display: none;
+}
+
+.message.success {
+    background-color: #28a745;
+}
+
+.message.error {
+    background-color: #dc3545;
 }
