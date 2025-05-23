@@ -57,6 +57,7 @@ async function handleCredentialResponse(response) {
             showAuthMessage(data.message, 'success');
             localStorage.setItem('userName', data.user.name || decoded_data.name);
             localStorage.setItem('userEmail', data.user.email || decoded_data.email);
+            // Armazena o profile_pic_path completo, que pode ser a URL do Google ou caminho local
             localStorage.setItem('userProfilePic', data.user.profile_pic_path || decoded_data.picture || 'default_profile.png');
             setTimeout(() => {
                 window.location.href = 'image_generator.html';
