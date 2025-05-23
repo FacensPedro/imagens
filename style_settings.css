@@ -1,0 +1,138 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #1a1a1a;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.header-buttons .button {
+    background-color: #6a0dad;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.header-buttons .button:hover {
+    background-color: #8b00a3;
+}
+
+main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.settings-container {
+    background-color: #1a1a1a;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+h2 {
+    color: #9370db;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-size: 0.9em;
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 12px 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #333;
+    color: #eee;
+    font-size: 1em;
+    outline: none;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+    border-color: #9370db;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.form-group span {
+    vertical-align: middle;
+    color: #ccc;
+    font-size: 1em;
+}
+
+form button {
+    background-color: #9370db;
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+form button:hover {
+    background-color: #6a0dad;
+    transform: translateY(-2px);
+}
+
+#message {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#message.success {
+    background-color: #28a745;
+    color: white;
+}
+
+#message.error {
+    background-color: #dc3545;
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
