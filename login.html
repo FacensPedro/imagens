@@ -10,37 +10,38 @@
 <body>
     <div class="auth-container">
         <h2>Login</h2>
-        <div id="g_id_onload"
-             data-client_id="SEU_CLIENT_ID_DO_GOOGLE"
-             data-context="signin"
-             data-ux_mode="popup"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin"
-             data-type="standard"
-             data-shape="rectangular"
-             data-theme="outline"
-             data-text="signin_with"
-             data-size="large"
-             data-logo_alignment="left">
-        </div>
+        <form id="login-form">
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" autocomplete="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
         <p class="separator">ou</p>
-        <div class="disabled-form">
-            <p>Em Breve</p>
-            <form>
-                <div class="input-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" disabled>
-                </div>
-                <div class="input-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" name="password" disabled>
-                </div>
-                <button type="submit" disabled>Entrar</button>
-            </form>
+        <div class="social-login">
+            <div id="g_id_onload"
+                 data-client_id="__GOOGLE_CLIENT_ID__"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
         </div>
+        <p class="message" id="auth-message"></p>
     </div>
+    <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
     <script src="script_auth.js"></script>
 </body>
 </html>
