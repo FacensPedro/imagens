@@ -12,13 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileArea = document.querySelector('.profile-area');
     const profileMenu = document.querySelector('.profile-menu');
     const profilePic = document.querySelector('.profile-pic');
-    const logoutButton = document.getElementById('logout-button');
-    const initialMessageElement = document.getElementById('initial-message');
-    const errorMessageElement = document.getElementById('error-message');
+    const logoutButton = document.getElementById('logout-button'); // Seleciona por ID
+    const initialMessageElement = document.querySelector('.initial-message'); // SELECIONA PELA NOVA CLASSE
 
-    let currentModel = 'imagen-3.0-generate-002'; // Modelo padrão para geração de imagem
+    let currentModel = 'google-studio'; // Modelo padrão
 
-    // Função para verificar o status do usuário e atualizar a UI
     async function checkUserStatus() {
         try {
             const response = await fetch('/api/user_status');
@@ -54,25 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
     generateButton.addEventListener('click', generateImage);
 
     async function generateImage() {
-        const userPrompt = promptInput.value.trim(); // Renomeado para userPrompt
-        if (!userPrompt) {
-            errorMessageElement.textContent = 'Por favor, digite um prompt para gerar a imagem.';
-            errorMessageElement.style.display = 'block';
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+            alert('Por favor, digite um prompt para gerar a imagem.');
             return;
         }
 
-        // Logs para depuração no frontend
-        console.log("Prompt do usuário digitado (userPrompt):", userPrompt);
-        console.log("Modelo selecionado (currentModel):", currentModel);
-        // O detailedPrompt será construído no backend (ou não, dependendo da sua escolha lá)
-        console.log("Corpo da requisição JSON a ser enviado:", JSON.stringify({ userPrompt: userPrompt, model: currentModel }));
-
-
-        if (initialMessageElement) {
-            initialMessageElement.style.display = 'none';
+        if (initialMessageElement) { // Usa a nova variável para remover
+            initialMessageElement.remove();
         }
-        imageDisplay.innerHTML = '';
-        errorMessageElement.style.display = 'none';
+        imageDisplay.innerHTML = ''; // Limpa resultados anteriores
         loadingMessage.style.display = 'block';
 
         try {
@@ -81,8 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                // MUDANÇA: Enviar 'userPrompt' para o backend
-                body: JSON.stringify({ userPrompt: userPrompt, model: currentModel })
+                body: JSON.stringify({ prompt: prompt, model: currentModel })
             });
 
             if (!response.ok) {
@@ -96,32 +84,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (imageUrl) {
                 const imgElement = document.createElement('img');
                 imgElement.src = imageUrl;
-                imgElement.alt = `Imagem gerada para "${userPrompt.replace(/"/g, '&quot;')}"`;
+                imgElement.alt = `Imagem gerada para "${prompt.replace(/"/g, '&quot;')}"`;
 
+                // --- NOVO: Tratamento de erro para carregamento da imagem com fallback local ---
                 imgElement.onerror = () => {
-                    console.error('Falha ao carregar a imagem gerada. URL:', imageUrl);
-                    errorMessageElement.textContent = 'A imagem gerada não pôde ser carregada. Tente novamente ou use outro prompt.';
-                    errorMessageElement.style.display = 'block';
-                    imgElement.remove();
+                    console.error('Falha ao carregar a imagem gerada (URL:' + imageUrl + '). Tentando fallback local.');
+                    imgElement.src = 'local_placeholder.png'; // Caminho para a imagem local criada
+                    imgElement.alt = 'Imagem gerada (fallback)';
+                    imgElement.onerror = null; // Remove o handler para evitar loop
                 };
-
-                imgElement.onload = () => {
-                    console.log('Imagem carregada com sucesso:', imageUrl);
-                    imageDisplay.style.justifyContent = 'center';
-                    imageDisplay.style.alignItems = 'center';
-                };
+                // --- FIM NOVO ---
 
                 imageDisplay.appendChild(imgElement);
-
+                imageDisplay.style.justifyContent = 'flex-start';
+                imageDisplay.style.alignItems = 'flex-start';
             } else {
-                errorMessageElement.textContent = 'Nenhuma imagem retornada ou URL inválida pela API.';
-                errorMessageElement.style.display = 'block';
+                imageDisplay.innerHTML = '<p>Nenhuma imagem retornada ou URL inválida.</p>';
             }
 
         } catch (error) {
             console.error('Erro na geração de imagem:', error);
-            errorMessageElement.textContent = `Erro: ${error.message || 'Falha na geração de imagem.'}`;
-            errorMessageElement.style.display = 'block';
+            imageDisplay.innerHTML = `<p style="color: red;">Erro: ${error.message || 'Falha na geração de imagem.'}</p>`;
         } finally {
             loadingMessage.style.display = 'none';
         }
@@ -134,24 +117,16 @@ document.addEventListener('DOMContentLoaded', () => {
     modelLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            if (this.dataset.model === 'google-studio') {
-                currentModel = 'imagen-3.0-generate-002';
-            } else {
-                currentModel = null;
-                alert('Este modelo ainda não está disponível para geração de imagens.');
-            }
+            currentModel = this.dataset.model;
             dropdownToggle.textContent = this.textContent;
             dropdownMenu.style.display = 'none';
-            console.log(`Modelo selecionado: ${this.textContent} (API Model: ${currentModel || 'N/A'})`);
+            console.log(`Modelo selecionado: ${currentModel}`);
         });
     });
 
     window.addEventListener('click', function(e) {
         if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
             dropdownMenu.style.display = 'none';
-        }
-        if (!profileArea.contains(e.target)) {
-            profileArea.classList.remove('active');
         }
     });
 
@@ -160,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         profileArea.classList.toggle('active');
     });
 
-    if (logoutButton) {
+    if (logoutButton) { // Garante que o botão exista antes de adicionar o listener
         logoutButton.addEventListener('click', async () => {
             try {
                 const response = await fetch('/api/logout', { method: 'POST' });
@@ -178,4 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("Botão de logout não encontrado. O listener não foi adicionado.");
     }
+
+    window.addEventListener('click', function(e) {
+        if (!profileArea.contains(e.target)) {
+            profileArea.classList.remove('active');
+        }
+    });
 });
