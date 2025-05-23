@@ -24,7 +24,7 @@ header {
     display: inline-block;
 }
 
-.dropdown-toggle { /* Apenas para o dropdown de modelo */
+.dropdown-toggle {
     background-color: #6a0dad;
     color: white;
     padding: 10px 20px;
@@ -80,12 +80,8 @@ header {
     background-color: #444;
 }
 
-/* Remover a regra de hover para o menu do perfil */
-/* .profile-area:hover .profile-menu {
-    display: block;
-} */
-
-/* O menu do perfil agora só aparece quando a classe 'active' é adicionada */
+/* REMOVIDO: .profile-area:hover .profile-menu { display: block; } */
+/* A aba do perfil agora só aparece quando a classe 'active' é adicionada via JS */
 .profile-area.active .profile-menu {
     display: block;
 }
@@ -106,6 +102,16 @@ header {
     background-position: center;
     border: 2px solid #9370db;
     cursor: pointer; /* Torna a imagem clicável */
+}
+
+.logout-button {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border-radius: 0 0 5px 5px;
+}
+
+.logout-button:hover {
+    background-color: #c82333 !important;
 }
 
 main {
