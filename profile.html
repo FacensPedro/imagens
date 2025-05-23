@@ -9,7 +9,7 @@
 <body>
     <header>
         <div class="header-buttons">
-            <a href="image_generator.html" class="button">Voltar ao Gerador</a>
+            <a href="image_generator.html" class="button" id="back-to-generator">Voltar ao Gerador</a>
         </div>
     </header>
     <main>
@@ -25,25 +25,32 @@
             <form id="profile-form">
                 <div class="form-group">
                     <label for="name">Nome:</label>
-                    <input type="text" id="name" name="name" value="Nome do Usuário">
+                    <input type="text" id="name" name="name" value="Nome do Usuário" autocomplete="name">
                 </div>
                 <div class="form-group">
                     <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" value="usuario@example.com" disabled>
+                    <input type="email" id="email" name="email" value="usuario@example.com" autocomplete="email" disabled>
                 </div>
                 <div class="form-group">
                     <label for="password">Nova Senha:</label>
-                    <input type="password" id="password" name="password" placeholder="Deixe em branco para não alterar">
+                    <input type="password" id="password" name="password" placeholder="Deixe em branco para não alterar" autocomplete="new-password">
                 </div>
                 <div class="form-group">
                     <label for="confirm-password">Confirmar Senha:</label>
-                    <input type="password" id="confirm-password" name="confirm-password">
+                    <input type="password" id="confirm-password" name="confirm-password" autocomplete="new-password">
                 </div>
                 <button type="submit">Salvar Alterações</button>
             </form>
             <p id="message" class="hidden"></p>
         </div>
     </main>
+    <div id="unsaved-changes-alert" class="alert-message hidden">
+        Você tem alterações não salvas. Deseja salvar antes de sair?
+        <div class="alert-buttons-container">
+            <button id="save-and-proceed-btn" class="alert-btn">Salvar</button>
+            <button id="discard-and-proceed-btn" class="alert-btn discard">Sair</button>
+        </div>
+    </div>
     <script src="script_profile.js"></script>
 </body>
 </html>
