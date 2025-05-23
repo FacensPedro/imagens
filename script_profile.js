@@ -3,7 +3,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const profileForm = document.getElementById('profile-form');
     const nameInput = document.getElementById('name');
-    const emailInput = document.getElementById('email'); // Campo de email
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm-password');
     const profileImageUpload = document.getElementById('profile-image-upload');
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetPage = '';
     let initialLoadComplete = false;
 
-    // Função para mostrar mensagens de status
     function showMessage(msg, type) {
         messageDiv.textContent = msg;
         messageDiv.className = `message ${type}`;
@@ -30,19 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    // Carregar dados do perfil do backend
     async function loadProfileData() {
         try {
             const response = await fetch('/api/profile');
             if (response.ok) {
                 const userData = await response.json();
                 nameInput.value = userData.name;
-                emailInput.value = userData.email; // Preencher o campo de email
                 displayName.textContent = userData.name;
 
-                // CORREÇÃO: Usar o profile_pic_path retornado pelo backend (que já pode ser a URL do Google)
                 if (userData.profile_pic_path) {
-                    // Se for um caminho local, monta o URL completo, senão usa a URL do Google diretamente
                     const imageUrl = userData.profile_pic_path.startsWith('http') ?
                                      userData.profile_pic_path :
                                      `/profile_pics/${userData.profile_pic_path}`;
@@ -71,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadProfileData();
 
-    // Função para verificar se há alterações
     function checkForChanges() {
         if (!initialLoadComplete) return false;
 
@@ -86,12 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return nameChanged || passwordChanged || newProfilePicSelected;
     }
 
-    // Monitorar alterações nos campos
     profileForm.addEventListener('input', () => {
         hasUnsavedChanges = checkForChanges();
     });
 
-    // CORREÇÃO: Mostrar a imagem selecionada na hora
     profileImageUpload.addEventListener('change', function() {
         if (initialLoadComplete) {
             hasUnsavedChanges = checkForChanges();
@@ -99,14 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    profilePicLarge.style.backgroundImage = `url('${e.target.result}')`; // Mostra a imagem selecionada
+                    profilePicLarge.style.backgroundImage = `url('${e.target.result}')`;
                 };
                 reader.readAsDataURL(file);
             }
         }
     });
 
-    // Submissão do formulário de perfil
     profileForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -120,24 +110,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formData = new FormData();
+        // Apenas adiciona ao formData se o valor mudou para evitar envios desnecessários
         if (newName !== originalProfileData.name) {
             formData.append('name', newName);
         }
-        if (newPassword) {
+        if (newPassword) { // Só envia a senha se foi digitada
             formData.append('password', newPassword);
         }
         if (profileImageUpload.files.length > 0) {
             formData.append('profile_pic', profileImageUpload.files[0]);
         }
         
+        // Verifica se há alguma alteração real antes de enviar
         if (formData.entries().next().done && !profileImageUpload.files.length) {
-             showMessage('Nenhuma alteração a ser salva.', 'success');
-             hasUnsavedChanges = false;
-             if (targetPage) {
-                 window.location.href = targetPage;
-                 targetPage = '';
-             }
-             return;
+            showMessage('Nenhuma alteração a ser salva.', 'success');
+            hasUnsavedChanges = false;
+            if (targetPage) {
+                window.location.href = targetPage;
+                targetPage = '';
+            }
+            return;
         }
 
         try {
@@ -151,11 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 showMessage(data.message, 'success');
                 localStorage.setItem('userName', data.user.name);
-                localStorage.setItem('userEmail', data.user.email);
+                localStorage.setItem('userEmail', data.user.email); // O email não muda, mas mantém no localStorage
                 localStorage.setItem('userProfilePic', data.user.profile_pic_path || 'default_profile.png');
                 displayName.textContent = data.user.name;
                 
-                // CORREÇÃO: Atualizar a imagem do perfil imediatamente após o salvar
                 if (data.user.profile_pic_path) {
                     const imageUrl = data.user.profile_pic_path.startsWith('http') ?
                                      data.user.profile_pic_path :
@@ -184,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Lógica para aviso de alterações não salvas ao tentar navegar
     document.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', function(e) {
             if (this.href.startsWith(window.location.origin) && !this.href.includes('#')) {
