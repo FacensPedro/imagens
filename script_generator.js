@@ -12,8 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileArea = document.querySelector('.profile-area');
     const profileMenu = document.querySelector('.profile-menu');
     const profilePic = document.querySelector('.profile-pic');
-    const logoutButton = document.getElementById('logout-button'); // Seleciona por ID
-    const initialMessageElement = document.querySelector('.initial-message'); // SELECIONA PELA NOVA CLASSE
+    const logoutButton = document.getElementById('logout-button');
+    const initialMessageElement = document.querySelector('.initial-message');
+
 
     let currentModel = 'google-studio'; // Modelo padrão
 
@@ -22,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/user_status');
             const data = await response.json();
             if (data.logged_in) {
+                // REMOVIDO: O nome do usuário não é mais exibido na página de geração
+                // profileToggle.textContent = data.user.name;
+
                 const userProfilePicPath = data.user.profile_pic_path;
                 if (userProfilePicPath && userProfilePicPath.startsWith('http')) {
                     profilePic.style.backgroundImage = `url('${userProfilePicPath}')`;
@@ -58,10 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (initialMessageElement) { // Usa a nova variável para remover
+        if (initialMessageElement) {
             initialMessageElement.remove();
         }
-        imageDisplay.innerHTML = ''; // Limpa resultados anteriores
+        imageDisplay.innerHTML = '';
         loadingMessage.style.display = 'block';
 
         try {
@@ -86,14 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgElement.src = imageUrl;
                 imgElement.alt = `Imagem gerada para "${prompt.replace(/"/g, '&quot;')}"`;
 
-                // --- Tratamento de erro para carregamento da imagem com fallback local ---
                 imgElement.onerror = () => {
                     console.error('Falha ao carregar a imagem gerada (URL:' + imageUrl + '). Tentando fallback local.');
-                    imgElement.src = 'local_placeholder.png'; // Caminho para a imagem local criada
+                    imgElement.src = 'local_placeholder.png';
                     imgElement.alt = 'Imagem gerada (fallback)';
-                    imgElement.onerror = null; // Remove o handler para evitar loop
+                    imgElement.onerror = null;
                 };
-                // --- FIM Tratamento de erro ---
 
                 imageDisplay.appendChild(imgElement);
                 imageDisplay.style.justifyContent = 'flex-start';
@@ -124,9 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Fechar dropdown de perfil se clicar fora da área do perfil
     window.addEventListener('click', function(e) {
-        if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
-            dropdownMenu.style.display = 'none';
+        if (!profileArea.contains(e.target)) {
+            profileArea.classList.remove('active');
         }
     });
 
@@ -135,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         profileArea.classList.toggle('active');
     });
 
-    if (logoutButton) { // Garante que o botão exista antes de adicionar o listener
+    if (logoutButton) {
         logoutButton.addEventListener('click', async () => {
             try {
                 const response = await fetch('/api/logout', { method: 'POST' });
@@ -153,10 +156,4 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("Botão de logout não encontrado. O listener não foi adicionado.");
     }
-
-    window.addEventListener('click', function(e) {
-        if (!profileArea.contains(e.target)) {
-            profileArea.classList.remove('active');
-        }
-    });
 });
