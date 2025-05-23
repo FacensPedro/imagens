@@ -18,12 +18,10 @@
         <div class="profile-area">
             <div class="profile-pic" style="background-image: url('default_profile.png');"></div>
             <div class="profile-dropdown">
-                <button class="profile-toggle">Nome do Usuário</button>
                 <div class="profile-menu">
                     <a href="profile.html">Perfil</a>
                     <a href="settings.html">Configurações</a>
-                    <button class="logout-button">Sair</button>
-                </div>
+                    <button class="logout-button" id="logout-button">Sair</button> </div>
             </div>
         </div>
     </header>
@@ -35,8 +33,7 @@
                 <button id="generate-button">Gerar Imagem</button>
             </div>
             <div class="image-results">
-                <p>Suas imagens geradas aparecerão aqui.</p>
-                <div id="image-display">
+                <p class="initial-message">Suas imagens geradas aparecerão aqui.</p> <div id="image-display">
                     </div>
                 <p class="loading-message" style="display: none;">Gerando imagem...</p>
             </div>
