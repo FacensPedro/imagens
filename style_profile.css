@@ -162,48 +162,49 @@ form button:hover {
 }
 
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 /* Estilos para o aviso de alterações não salvas (centralizado na página) */
 .alert-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #1a1a1a;
+    position: fixed; /* Fixa na tela */
+    top: 50%; /* Centraliza verticalmente */
+    left: 50%; /* Centraliza horizontalmente */
+    transform: translate(-50%, -50%); /* Ajusta para o centro exato do elemento */
+    background-color: #1a1a1a; /* Cor de fundo escura */
     color: white;
     padding: 25px 30px;
     border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7); /* Sombra mais forte */
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    max-width: 90%;
+    align-items: center; /* Centraliza o texto e botões */
+    gap: 20px; /* Espaçamento entre elementos */
+    max-width: 90%; /* Garante que não seja muito largo em telas pequenas */
     text-align: center;
-    border: 1px solid #9370db;
+    border: 1px solid #9370db; /* Borda sutil para destacar */
 }
 
 .alert-buttons-container {
     display: flex;
-    justify-content: center;
-    gap: 15px;
-    width: 100%;
+    justify-content: center; /* Centraliza os botões */
+    gap: 15px; /* Espaçamento entre os botões */
+    width: 100%; /* Ocupa a largura total para centralização */
 }
 
 .alert-message .alert-btn {
-    width: 100px;
-    height: 40px;
-    line-height: 20px;
-    padding: 10px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* Defina o tamanho fixo aqui, por exemplo, 100px de largura e 40px de altura */
+    width: 100px; /* Largura desejada para o botão */
+    height: 40px; /* Altura desejada para o botão */
+    line-height: 20px; /* Ajusta a altura da linha para centralizar texto verticalmente, se necessário */
+    padding: 10px; /* Padding ajustado para o tamanho fixo */
+    box-sizing: border-box; /* Inclui padding e borda no tamanho total */
+    display: flex; /* Para centralizar o texto dentro do botão */
+    align-items: center; /* Centraliza verticalmente */
+    justify-content: center; /* Centraliza horizontalmente */
 
-    background-color: #9370db;
+    background-color: #9370db; /* Cor roxa para o botão principal */
     color: white;
     border: none;
     border-radius: 5px;
@@ -219,7 +220,7 @@ form button:hover {
 }
 
 .alert-message .alert-btn.discard {
-    background-color: #dc3545;
+    background-color: #dc3545; /* Cor vermelha para "Sair" */
 }
 
 .alert-message .alert-btn.discard:hover {
