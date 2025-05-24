@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory, session, Response, url_for
 from flask_cors import CORS
 from pyngrok import ngrok
-from google.colab import userdata
+from google.colab import userdata # Importar userdata explicitamente
 import google.generativeai as genai
 from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.parse
@@ -23,9 +23,13 @@ STATIC_FOLDER = 'imagens'
 
 # --- Inicialização do Aplicativo Flask ---
 app = Flask(__name__, static_folder=STATIC_FOLDER)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-if not app.secret_key:
-    raise ValueError("A variável de ambiente 'FLASK_SECRET_KEY' não está configurada.")
+
+# REALIZAR AS MUDANÇAS AQUI PARA USAR userdata.get() PARA FLASK_SECRET_KEY
+FLASK_SECRET_KEY_FROM_COLAB = userdata.get('FLASK_SECRET_KEY')
+if not FLASK_SECRET_KEY_FROM_COLAB:
+    raise ValueError("A variável 'FLASK_SECRET_KEY' não está configurada nas Secrets do Colab.")
+app.secret_key = FLASK_SECRET_KEY_FROM_COLAB
+# FIM DAS MUDANÇAS
 
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
