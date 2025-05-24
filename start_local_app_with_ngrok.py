@@ -5,30 +5,35 @@ import sqlite3
 import json
 import base64
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_from_directory, session, Response
+from flask import Flask, request, jsonify, send_from_directory, session, Response, url_for
 from flask_cors import CORS
 from pyngrok import ngrok
 from google.colab import userdata
 import google.generativeai as genai
 from werkzeug.security import generate_password_hash, check_password_hash
+import urllib.parse
+from functools import wraps
 
-
-# --- Configurações ---
-FLASK_PORT = 5000
-NGROK_DOMAIN = 'sparrow-ruling-separately.ngrok-free.app'
+# --- Configurações de Ambiente ---
+FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
+NGROK_DOMAIN = os.environ.get('NGROK_DOMAIN') # Deve ser configurado via variável de ambiente para produção
 DATABASE_FILE = 'users.db'
 PROFILE_PICS_DIR = 'profile_pics'
+STATIC_FOLDER = 'imagens'
 
-app = Flask(__name__, static_folder='imagens')
-
-app.secret_key = 'uma-chave-secreta-realmente-longa-e-aleatoria-para-producao-flask-aqui'
+# --- Inicialização do Aplicativo Flask ---
+app = Flask(__name__, static_folder=STATIC_FOLDER)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+if not app.secret_key:
+    raise ValueError("A variável de ambiente 'FLASK_SECRET_KEY' não está configurada.")
 
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['SESSION_COOKIE_SECURE'] = True 
+app.config['SESSION_COOKIE_SECURE'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
+# --- Configurações de Chaves de API ---
 GOOGLE_CLIENT_ID_FRONTEND = userdata.get('GOOGLE_CLIENT_ID_FRONTEND')
 if not GOOGLE_CLIENT_ID_FRONTEND:
     print('AVISO: GOOGLE_CLIENT_ID_FRONTEND não encontrado nas Secrets do Colab.')
@@ -39,15 +44,13 @@ if GOOGLE_API_KEY:
 else:
     print('AVISO: GOOGLE_API_KEY não encontrada nas Secrets do Colab. A geração de imagens com a API real não funcionará.')
 
-
-# --- Funções auxiliares ---
+# --- Funções de Banco de Dados ---
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    print(f"Inicializando banco de dados '{DATABASE_FILE}'...")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -62,15 +65,21 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
-    print("Banco de dados inicializado.")
 
 def setup_profile_pics_dir():
     if not os.path.exists(PROFILE_PICS_DIR):
         os.makedirs(PROFILE_PICS_DIR)
 
-# --- ROTAS DE API (JSON) ---
-# Colocar as rotas de API mais específicas ANTES das rotas de arquivos estáticos genéricas.
+# --- Decoradores ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Não autenticado.'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
+# --- Rotas de Autenticação ---
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -89,7 +98,6 @@ def register():
             if user_by_google:
                 session['user_id'] = user_by_google['id']
                 session.permanent = True
-                print(f"DEBUG REGISTER: User {user_by_google['email']} logged in via Google. Session ID: {session.get('user_id')}")
                 return jsonify({'message': 'Login Google bem-sucedido!', 'user': dict(user_by_google)}), 200
 
             user_by_email = cursor.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
@@ -100,7 +108,6 @@ def register():
                     user_by_email = conn.execute("SELECT id, name, email, profile_pic_path FROM users WHERE id = ?", (user_by_email['id'],)).fetchone()
                     session['user_id'] = user_by_email['id']
                     session.permanent = True
-                    print(f"DEBUG REGISTER: Google ID linked to {email}. Session ID: {session.get('user_id')}")
                     return jsonify({'message': 'Conta Google vinculada com sucesso!', 'user': dict(user_by_email)}), 200
                 else:
                     return jsonify({'error': 'Este email já está vinculado a outra conta Google.'}), 409
@@ -110,7 +117,6 @@ def register():
                 user_id = cursor.lastrowid
                 session['user_id'] = user_id
                 session.permanent = True
-                print(f"DEBUG REGISTER: New Google user {email} created. Session ID: {session.get('user_id')}")
                 return jsonify({'message': 'Usuário Google registrado com sucesso!', 'user': {'id': user_id, 'name': name, 'email': email, 'profile_pic_path': google_picture_url}}), 201
 
         else:
@@ -130,7 +136,6 @@ def register():
             user_id = cursor.lastrowid
             session['user_id'] = user_id
             session.permanent = True
-            print(f"DEBUG REGISTER: New manual user {email} created. Session ID: {session.get('user_id')}")
             return jsonify({'message': 'Usuário registrado com sucesso!', 'user': {'id': user_id, 'name': name, 'email': email}}), 201
 
     except sqlite3.IntegrityError as e:
@@ -138,7 +143,6 @@ def register():
         return jsonify({'error': f'Erro de integridade no DB: {e}'}), 409
     except Exception as e:
         conn.rollback()
-        print(f"Erro inesperado register: {e}")
         return jsonify({'error': 'Ocorreu um erro inesperado no registro.'}), 500
     finally:
         conn.close()
@@ -179,12 +183,12 @@ def login():
             else:
                 return jsonify({'error': 'Email ou senha inválidos.'}), 401
     except Exception as e:
-        print(f"Erro inesperado login: {e}")
         return jsonify({'error': 'Ocorreu um erro inesperado no login.'}), 500
     finally:
         conn.close()
 
 @app.route('/api/logout', methods=['POST'])
+@login_required
 def logout():
     session.pop('user_id', None)
     return jsonify({'message': 'Logout bem-sucedido!'}), 200
@@ -198,16 +202,17 @@ def user_status():
         conn.close()
         if user:
             user_data = dict(user)
-            if user_data['profile_pic_path'] and not user_data['profile_pic_path'].startswith('http'):
-                user_data['profile_pic_path'] = os.path.basename(user_data['profile_pic_path'])
+            if user_data['profile_pic_path'] and not user_data['profile_pic_path'].startswith(('http://', 'https://')):
+                user_data['profile_pic_url'] = url_for('uploaded_file', filename=os.path.basename(user_data['profile_pic_path']), _external=True)
+            else:
+                user_data['profile_pic_url'] = user_data['profile_pic_path']
+            del user_data['profile_pic_path']
             return jsonify({'logged_in': True, 'user': user_data}), 200
     return jsonify({'logged_in': False}), 200
 
 @app.route('/api/profile', methods=['GET', 'POST'])
+@login_required
 def profile():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Não autenticado.'}), 401
-
     conn = get_db_connection()
     user_id = session['user_id']
 
@@ -216,8 +221,11 @@ def profile():
             user = conn.execute("SELECT id, name, email, profile_pic_path FROM users WHERE id = ?", (user_id,)).fetchone()
             if user:
                 user_data = dict(user)
-                if user_data['profile_pic_path'] and not user_data['profile_pic_path'].startswith('http'):
-                    user_data['profile_pic_path'] = os.path.basename(user_data['profile_pic_path'])
+                if user_data['profile_pic_path'] and not user_data['profile_pic_path'].startswith(('http://', 'https://')):
+                    user_data['profile_pic_url'] = url_for('uploaded_file', filename=os.path.basename(user_data['profile_pic_path']), _external=True)
+                else:
+                    user_data['profile_pic_url'] = user_data['profile_pic_path']
+                del user_data['profile_pic_path']
                 return jsonify(user_data), 200
             return jsonify({'error': 'Usuário não encontrado.'}), 404
 
@@ -242,8 +250,12 @@ def profile():
                 params.append(password_hash)
 
             if profile_pic_file:
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                filename_ext = profile_pic_file.filename.rsplit('.', 1)[1].lower() if '.' in profile_pic_file.filename else ''
+                if filename_ext not in allowed_extensions:
+                    return jsonify({'error': 'Tipo de arquivo de imagem não permitido.'}), 400
+
                 timestamp = int(datetime.now().timestamp())
-                filename_ext = profile_pic_file.filename.rsplit('.', 1)[1].lower() if '.' in profile_pic_file.filename else 'png'
                 filename = f"{user_id}_{timestamp}.{filename_ext}"
                 filepath = os.path.join(PROFILE_PICS_DIR, filename)
 
@@ -252,9 +264,8 @@ def profile():
                 updates.append("profile_pic_path = ?")
                 params.append(filepath)
 
-                if old_profile_pic_path and os.path.exists(old_profile_pic_path) and not old_profile_pic_path.startswith('http'):
+                if old_profile_pic_path and os.path.exists(old_profile_pic_path) and not old_profile_pic_path.startswith(('http://', 'https://')):
                     os.remove(old_profile_pic_path)
-                    print(f"Imagem antiga excluída: {old_profile_pic_path}")
 
             if not updates:
                 return jsonify({'message': 'Nenhuma alteração enviada.'}), 200
@@ -266,23 +277,30 @@ def profile():
             conn.commit()
             updated_user = conn.execute("SELECT id, name, email, profile_pic_path FROM users WHERE id = ?", (user_id,)).fetchone()
             updated_user_data = dict(updated_user)
-            if updated_user_data['profile_pic_path'] and not updated_user_data['profile_pic_path'].startswith('http'):
-                updated_user_data['profile_pic_path'] = os.path.basename(updated_user_data['profile_pic_path'])
+            if updated_user_data['profile_pic_path'] and not updated_user_data['profile_pic_path'].startswith(('http://', 'https://')):
+                updated_user_data['profile_pic_url'] = url_for('uploaded_file', filename=os.path.basename(updated_user_data['profile_pic_path']), _external=True)
+            else:
+                updated_user_data['profile_pic_url'] = updated_user_data['profile_pic_path']
+            del updated_user_data['profile_pic_path']
 
             return jsonify({'message': 'Perfil atualizado com sucesso!', 'user': updated_user_data}), 200
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao atualizar perfil: {e}")
         return jsonify({'error': f'Erro ao atualizar perfil: {str(e)}'}), 500
     finally:
         conn.close()
+
+# --- Rota para servir imagens de perfil ---
+@app.route(f'/{PROFILE_PICS_DIR}/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(PROFILE_PICS_DIR, filename)
 
 # --- Rota de Geração de Imagens ---
 @app.route('/generate_image', methods=['POST'])
 def generate_image_endpoint():
     data = request.get_json()
     prompt = data.get('prompt')
-    model_name = data.get('model', 'gemini-2.5-flash-preview-04-17')
+    model_name = data.get('model', 'gemini-1.5-flash-latest')
 
     if not prompt:
         return jsonify({'error': 'Prompt não fornecido.'}), 400
@@ -300,17 +318,12 @@ def generate_image_endpoint():
                 if candidate.content and candidate.content.parts:
                     for part in candidate.content.parts:
                         if hasattr(part, 'image') and part.image:
-                            print(f"AVISO: Modelo {model_name} retornou um objeto de imagem. Verifique a estrutura para extrair o URL/Base64.")
                             if hasattr(part.image, 'uri') and part.image.uri:
                                 image_url_to_frontend = part.image.uri
                             elif hasattr(part.image, 'data') and part.image.data:
                                 image_url_to_frontend = f"data:image/jpeg;base64,{base64.b64encode(part.image.data).decode('utf-8')}"
-                            else:
-                                image_url_to_frontend = f"https://via.placeholder.com/400x300?text=IMAGEM+REAL+PENDENTE"
                             break
                         elif hasattr(part, 'text') and part.text:
-                            print(f"AVISO: Modelo {model_name} retornou texto (não imagem).")
-                            print(f"Resposta textual do modelo: {part.text[:200]}...")
                             image_url_to_frontend = f"https://via.placeholder.com/400x300?text=Modelo+Retornou+Texto:{urllib.parse.quote_plus(part.text[:30])}"
                             break
                 if image_url_to_frontend:
@@ -319,16 +332,23 @@ def generate_image_endpoint():
         if image_url_to_frontend:
             return jsonify({'image_url': image_url_to_frontend}), 200
         else:
-            print("AVISO: API de geração de imagem não retornou dados de imagem esperados ou texto.")
             return jsonify({'error': 'A API não retornou uma imagem/texto válido. Verifique o modelo e o prompt.'}), 500
 
     except Exception as e:
-        print(f"Erro na API de geração de imagem: {e}")
         return jsonify({'error': f'Falha ao gerar imagem: {str(e)}. Verifique se você está usando um modelo de text-to-image e configurou a API corretamente.'}), 500
 
-# --- Iniciar o Túnel Ngrok e Servidor ---
+# --- Rotas de Arquivos Estáticos ---
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
+# --- Função de Inicialização do Servidor e Túnel Ngrok ---
 def run_flask_app():
-    app.run(port=FLASK_PORT, host='0.0.0.0', debug=False)
+    app.run(port=FLASK_PORT, host='0.0.0.0', debug=False, threaded=True)
 
 if __name__ == '__main__':
     init_db()
@@ -340,13 +360,23 @@ if __name__ == '__main__':
     time.sleep(5)
 
     try:
-        public_url = ngrok.connect(FLASK_PORT, proto='http', domain=NGROK_DOMAIN)
+        ngrok_auth_token = userdata.get('NGROK_AUTH_TOKEN')
+        if ngrok_auth_token:
+            ngrok.set_auth_token(ngrok_auth_token)
+        else:
+            raise ValueError("A variável de ambiente 'NGROK_AUTH_TOKEN' não está configurada nas Secrets do Colab.")
+
+        if NGROK_DOMAIN:
+            public_url = ngrok.connect(FLASK_PORT, proto='http', hostname=NGROK_DOMAIN)
+        else:
+            public_url = ngrok.connect(FLASK_PORT, proto='http')
+
         print(f'Sua aplicação está acessível em: {public_url}')
         print('Mantenha esta célula em execução para manter o túnel Ngrok ativo. Para parar, interrompa a execução da célula.')
     except Exception as e:
         print(f'ERRO ao iniciar o túnel Ngrok: {e}')
-        print('Causas comuns: Authtoken inválido, domínio já em uso, ou porta já ocupada.')
         ngrok.kill()
+        os._exit(1)
 
     while True:
         time.sleep(1)
