@@ -2,34 +2,30 @@ import os
 import threading
 import time
 import sqlite3
-import json
 import base64
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_from_directory, session, Response, url_for
+from flask import Flask, request, jsonify, send_from_directory, session, url_for
 from flask_cors import CORS
 from pyngrok import ngrok
-from google.colab import userdata # Importar userdata explicitamente
+from google.colab import userdata
 import google.generativeai as genai
 from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.parse
 from functools import wraps
 
-# --- Configurações de Ambiente ---
-FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
-NGROK_DOMAIN = os.environ.get('NGROK_DOMAIN') # Deve ser configurado via variável de ambiente para produção
+FLASK_PORT = int(os.environ.get('FLASK_PORT', 5050))
+NGROK_DOMAIN = os.environ.get('NGROK_DOMAIN')
 DATABASE_FILE = 'users.db'
 PROFILE_PICS_DIR = 'profile_pics'
-STATIC_FOLDER = 'imagens'
 
-# --- Inicialização do Aplicativo Flask ---
+STATIC_FOLDER = '/content/imagens'
+
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 
-# REALIZAR AS MUDANÇAS AQUI PARA USAR userdata.get() PARA FLASK_SECRET_KEY
 FLASK_SECRET_KEY_FROM_COLAB = userdata.get('FLASK_SECRET_KEY')
 if not FLASK_SECRET_KEY_FROM_COLAB:
     raise ValueError("A variável 'FLASK_SECRET_KEY' não está configurada nas Secrets do Colab.")
 app.secret_key = FLASK_SECRET_KEY_FROM_COLAB
-# FIM DAS MUDANÇAS
 
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
@@ -37,7 +33,6 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
-# --- Configurações de Chaves de API ---
 GOOGLE_CLIENT_ID_FRONTEND = userdata.get('GOOGLE_CLIENT_ID_FRONTEND')
 if not GOOGLE_CLIENT_ID_FRONTEND:
     print('AVISO: GOOGLE_CLIENT_ID_FRONTEND não encontrado nas Secrets do Colab.')
@@ -48,7 +43,6 @@ if GOOGLE_API_KEY:
 else:
     print('AVISO: GOOGLE_API_KEY não encontrada nas Secrets do Colab. A geração de imagens com a API real não funcionará.')
 
-# --- Funções de Banco de Dados ---
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
@@ -74,7 +68,6 @@ def setup_profile_pics_dir():
     if not os.path.exists(PROFILE_PICS_DIR):
         os.makedirs(PROFILE_PICS_DIR)
 
-# --- Decoradores ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -83,7 +76,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- Rotas de Autenticação ---
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -145,7 +137,7 @@ def register():
     except sqlite3.IntegrityError as e:
         conn.rollback()
         return jsonify({'error': f'Erro de integridade no DB: {e}'}), 409
-    except Exception as e:
+    except Exception:
         conn.rollback()
         return jsonify({'error': 'Ocorreu um erro inesperado no registro.'}), 500
     finally:
@@ -186,7 +178,7 @@ def login():
                 return jsonify({'message': 'Login bem-sucedido!', 'user': dict(user)}), 200
             else:
                 return jsonify({'error': 'Email ou senha inválidos.'}), 401
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Ocorreu um erro inesperado no login.'}), 500
     finally:
         conn.close()
@@ -294,12 +286,10 @@ def profile():
     finally:
         conn.close()
 
-# --- Rota para servir imagens de perfil ---
 @app.route(f'/{PROFILE_PICS_DIR}/<filename>')
 def uploaded_file(filename):
     return send_from_directory(PROFILE_PICS_DIR, filename)
 
-# --- Rota de Geração de Imagens ---
 @app.route('/generate_image', methods=['POST'])
 def generate_image_endpoint():
     data = request.get_json()
@@ -341,16 +331,14 @@ def generate_image_endpoint():
     except Exception as e:
         return jsonify({'error': f'Falha ao gerar imagem: {str(e)}. Verifique se você está usando um modelo de text-to-image e configurou a API corretamente.'}), 500
 
-# --- Rotas de Arquivos Estáticos ---
 @app.route('/')
 def serve_index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(STATIC_FOLDER, 'index.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    return send_from_directory(app.static_folder, filename)
+    return send_from_directory(STATIC_FOLDER, filename)
 
-# --- Função de Inicialização do Servidor e Túnel Ngrok ---
 def run_flask_app():
     app.run(port=FLASK_PORT, host='0.0.0.0', debug=False, threaded=True)
 
